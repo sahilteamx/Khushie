@@ -225,209 +225,119 @@
   function finishBalloons() { const score = balloonsScore; stopBalloons(); $("#balloonsReplay").hidden = false; $("#balloonsStatus").textContent = `Pop-stop! Your score is ${score}.`; markComplete("balloons", score); celebrate(15); showToast(`Balloon streak complete! +${score}`); }
 
   // Memory
-  const symbols = ["🍎", "🍌", "🌸", "🎂", "🎁", "⭐", "🎈", "💖", "🦋", "🍓"];
+  const symbols = ["🎂","🎁","🎈","⭐","❤️","🌸","🦋","✨","🍰","🌙"];
   const memoryConfig = { easy: 6, medium: 8, hard: 10 };
-  let memoryDifficulty = "easy";
-  let memoryDeck = [];
-  let memoryOpen = [];
-  let memoryMoves = 0;
-  let memoryMatched = 0;
-  let memoryScore = 0;
-  let memoryTimer = null;
-  let memoryMismatchTimer = null;
-  let memorySeconds = 0;
-  let memoryLocked = false;
-  let memoryGameStarted = false;
-  let memoryRound = 0;
-
-  function shuffle(values) {
-    const copy = [...values];
-    for (let i = copy.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-  }
-
-  function clearMemoryMismatchTimer() {
-    if (memoryMismatchTimer) window.clearTimeout(memoryMismatchTimer);
-    memoryMismatchTimer = null;
-  }
-
-  function resetMemory() {
-    memoryRound += 1;
-    stopMemory();
-    memoryDeck = [];
-    memoryOpen = [];
-    memoryMoves = 0;
-    memoryMatched = 0;
-    memoryScore = 0;
-    memorySeconds = 0;
-    memoryLocked = false;
-    memoryGameStarted = false;
-    $("#memoryMoves").textContent = "0";
-    $("#memoryTimer").textContent = "0";
-    $("#memoryPairs").textContent = `0 / ${memoryConfig[memoryDifficulty]}`;
-    $("#memoryStart").hidden = false;
-    $("#memoryReplay").hidden = true;
-    $("#memoryStatus").textContent = "Flip two cards at a time and match all the symbols.";
-    buildMemoryPreview();
-  }
-
-  function stopMemory() {
-    if (memoryTimer) window.clearInterval(memoryTimer);
-    memoryTimer = null;
-    clearMemoryMismatchTimer();
-    memoryLocked = false;
-    memoryGameStarted = false;
-  }
-
-  function buildMemoryPreview() {
-    const board = $("#memoryBoard");
-    if (!board) return;
-    const pairs = memoryConfig[memoryDifficulty];
-    board.classList.toggle("is-hard", memoryDifficulty === "hard");
-    board.setAttribute("aria-disabled", "true");
-    board.innerHTML = "";
-    for (let i = 0; i < pairs * 2; i += 1) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "memory-card";
-      button.disabled = true;
-      button.setAttribute("aria-label", "Memory card hidden until the game starts");
-      button.innerHTML = '<span class="memory-card-inner"><span class="memory-face memory-face--back">?</span><span class="memory-face memory-face--front">?</span></span>';
-      board.appendChild(button);
-    }
-  }
-
+  let memoryDifficulty = "easy"; let memoryDeck = []; let memoryOpen = []; let memoryMoves = 0; let memoryMatched = 0; let memoryTimer = null; let memorySeconds = 0; let memoryLocked = false;
+  function shuffle(values) { const copy = [...values]; for (let i = copy.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; }
+  function resetMemory() { stopMemory(); memoryOpen = []; memoryMoves = 0; memoryMatched = 0; memorySeconds = 0; $("#memoryMoves").textContent = "0"; $("#memoryTimer").textContent = "0"; $("#memoryPairs").textContent = `0 / ${memoryConfig[memoryDifficulty]}`; $("#memoryStart").hidden = false; $("#memoryReplay").hidden = true; $("#memoryStatus").textContent = "Flip two cards at a time and match all the symbols."; buildMemoryPreview(); }
+  function stopMemory() { if (memoryTimer) window.clearInterval(memoryTimer); memoryTimer = null; memoryLocked = false; }
+  function buildMemoryPreview() { const board = $("#memoryBoard"); if (!board) return; const pairs = memoryConfig[memoryDifficulty]; board.classList.toggle("is-hard", memoryDifficulty === "hard"); board.innerHTML = ""; for (let i = 0; i < pairs * 2; i += 1) { const button = document.createElement("button"); button.type = "button"; button.className = "memory-card"; button.disabled = true; button.setAttribute("aria-label", "Hidden memory card"); button.innerHTML = `<span class="memory-card-inner"><span class="memory-face memory-face--back">?</span><span class="memory-face memory-face--front">?</span></span>`; board.appendChild(button); } }
   function startMemory() {
-    const board = $("#memoryBoard");
-    if (!board) return;
-
-    memoryRound += 1;
-    stopMemory();
-    const currentRound = memoryRound;
-    const pairCount = memoryConfig[memoryDifficulty];
-    const chosen = shuffle(symbols).slice(0, pairCount);
-
-    memoryDeck = shuffle([...chosen, ...chosen].map((symbol, index) => ({
-      id: index,
-      symbol,
-      matched: false
-    })));
-    memoryOpen = [];
-    memoryMoves = 0;
-    memoryMatched = 0;
-    memoryScore = 0;
-    memorySeconds = 0;
-    memoryLocked = false;
-    memoryGameStarted = true;
-
-    $("#memoryMoves").textContent = "0";
-    $("#memoryTimer").textContent = "0";
-    $("#memoryPairs").textContent = `0 / ${pairCount}`;
-    $("#memoryStart").hidden = true;
-    $("#memoryReplay").hidden = true;
-    $("#memoryStatus").textContent = "Find every matching emoji pair. Good luck! ✨";
-
-    board.classList.toggle("is-hard", memoryDifficulty === "hard");
-    board.removeAttribute("aria-disabled");
-    board.innerHTML = "";
-
+    stopMemory(); const pairCount = memoryConfig[memoryDifficulty]; const chosen = symbols.slice(0, pairCount); memoryDeck = shuffle([...chosen, ...chosen].map((symbol, index) => ({ id: index, symbol, matched: false }))); memoryOpen = []; memoryMoves = 0; memoryMatched = 0; memorySeconds = 0; memoryLocked = false;
+    $("#memoryMoves").textContent = "0"; $("#memoryTimer").textContent = "0"; $("#memoryPairs").textContent = `0 / ${pairCount}`; $("#memoryStart").hidden = true; $("#memoryReplay").hidden = true; $("#memoryStatus").textContent = "Match every pair.";
+    const board = $("#memoryBoard"); board.classList.toggle("is-hard", memoryDifficulty === "hard"); board.innerHTML = "";
     memoryDeck.forEach((card, index) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "memory-card";
-      button.dataset.index = String(index);
-      button.setAttribute("aria-label", "Hidden memory card");
+      const button = document.createElement("button"); button.type = "button"; button.className = "memory-card"; button.dataset.index = String(index); button.setAttribute("aria-label", "Hidden memory card");
       button.innerHTML = `<span class="memory-card-inner"><span class="memory-face memory-face--back">?</span><span class="memory-face memory-face--front">${card.symbol}</span></span>`;
-      button.addEventListener("click", () => flipMemory(index));
-      board.appendChild(button);
+      button.addEventListener("click", () => flipMemory(index)); board.appendChild(button);
     });
-
-    memoryTimer = window.setInterval(() => {
-      if (!memoryGameStarted || currentRound !== memoryRound) return;
-      memorySeconds += 1;
-      $("#memoryTimer").textContent = String(memorySeconds);
-    }, 1000);
+    memoryTimer = window.setInterval(() => { memorySeconds += 1; $("#memoryTimer").textContent = String(memorySeconds); }, 1000);
   }
-
   function flipMemory(index) {
-    if (!memoryGameStarted || memoryLocked || memoryOpen.length >= 2) return;
-
-    const card = memoryDeck[index];
-    if (!card || card.matched || memoryOpen.includes(index)) return;
-
-    const button = $(`.memory-card[data-index="${index}"]`, $("#memoryBoard"));
-    if (!button) return;
-
-    button.classList.add("is-flipped");
-    button.setAttribute("aria-label", `Memory card ${card.symbol}`);
-    memoryOpen.push(index);
-
-    if (memoryOpen.length < 2) {
-      $("#memoryStatus").textContent = `You found ${card.symbol}. Pick another card.`;
-      return;
-    }
-
-    memoryMoves += 1;
-    $("#memoryMoves").textContent = String(memoryMoves);
-
-    const [aIndex, bIndex] = memoryOpen;
-    const a = memoryDeck[aIndex];
-    const b = memoryDeck[bIndex];
-
+    if (memoryLocked || memoryOpen.includes(index)) return; const card = memoryDeck[index]; if (!card || card.matched) return;
+    const button = $(`.memory-card[data-index="${index}"]`); button.classList.add("is-flipped"); button.setAttribute("aria-label", `Memory card ${card.symbol}`); memoryOpen.push(index);
+    if (memoryOpen.length < 2) return;
+    memoryMoves += 1; $("#memoryMoves").textContent = String(memoryMoves);
+    const [aIndex, bIndex] = memoryOpen; const a = memoryDeck[aIndex]; const b = memoryDeck[bIndex];
     if (a.symbol === b.symbol) {
-      a.matched = true;
-      b.matched = true;
-      memoryMatched += 1;
-      memoryScore += 1;
-
-      [aIndex, bIndex].forEach((idx) => {
-        const cardButton = $(`.memory-card[data-index="${idx}"]`, $("#memoryBoard"));
-        cardButton?.classList.add("is-matched");
-        cardButton?.setAttribute("aria-label", `Matched pair ${memoryDeck[idx].symbol}`);
-      });
-
-      memoryOpen = [];
-      $("#memoryPairs").textContent = `${memoryMatched} / ${pairCountForCurrentDifficulty()}`;
-      $("#memoryStatus").textContent = `Match! +1 point. Score: ${memoryScore}. ✨`;
-
-      if (memoryMatched === pairCountForCurrentDifficulty()) finishMemory();
-      return;
+      a.matched = true; b.matched = true; $$(".memory-card", $("#memoryBoard")).forEach((el) => { if (Number(el.dataset.index) === aIndex || Number(el.dataset.index) === bIndex) el.classList.add("is-matched"); }); memoryMatched += 1; memoryOpen = []; $("#memoryPairs").textContent = `${memoryMatched} / ${memoryConfig[memoryDifficulty]}`; if (memoryMatched === memoryConfig[memoryDifficulty]) finishMemory();
+    } else {
+      memoryLocked = true; window.setTimeout(() => { [aIndex,bIndex].forEach((idx) => $(`.memory-card[data-index="${idx}"]`)?.classList.remove("is-flipped")); memoryOpen = []; memoryLocked = false; }, reducedMotion ? 180 : 650);
     }
-
-    memoryLocked = true;
-    $("#memoryStatus").textContent = "Not a match… remember those two!";
-    const roundAtMismatch = memoryRound;
-    memoryMismatchTimer = window.setTimeout(() => {
-      if (roundAtMismatch !== memoryRound) return;
-      [aIndex, bIndex].forEach((idx) => {
-        const cardButton = $(`.memory-card[data-index="${idx}"]`, $("#memoryBoard"));
-        cardButton?.classList.remove("is-flipped");
-        cardButton?.setAttribute("aria-label", "Hidden memory card");
-      });
-      memoryOpen = [];
-      memoryLocked = false;
-      memoryMismatchTimer = null;
-      $("#memoryStatus").textContent = `Keep going. Pairs found: ${memoryMatched} / ${pairCountForCurrentDifficulty()}.`;
-    }, reducedMotion ? 280 : 850);
   }
-
-  function pairCountForCurrentDifficulty() {
-    return memoryConfig[memoryDifficulty] || memoryConfig.easy;
-  }
-
-  function finishMemory() {
-    stopMemory();
-    const base = 900 - memoryMoves * 18 - memorySeconds * 3;
-    const score = Math.max(100, base);
-    $("#memoryReplay").hidden = false;
-    $("#memoryStatus").textContent = `🎉 Complete! ${memoryMatched} pairs · ${memoryScore} points · ${memoryMoves} moves · ${memorySeconds}s.`;
-    markComplete("memory", score);
-    celebrate(20);
-    showToast(`Memory complete! ${memoryScore} pair points earned`);
-  }
+  function finishMemory() { stopMemory(); const base = 900 - memoryMoves * 18 - memorySeconds * 3; const score = Math.max(100, base); $("#memoryReplay").hidden = false; $("#memoryStatus").textContent = `Perfect! ${memoryMatched} pairs in ${memoryMoves} moves and ${memorySeconds}s.`; markComplete("memory", score); celebrate(20); showToast(`Memory complete! +${Math.round(score)}`); }
 
   // Puzzle
-  let 
+  let puzzleTiles = []; let puzzleSelected = null; let puzzleMoves = 0;
+  function resetPuzzle() { puzzleTiles = [...Array(9).keys()]; puzzleSelected = null; puzzleMoves = 0; $("#puzzleMoves").textContent = "0"; $("#puzzleBest").textContent = state.best?.puzzle ? String(state.best.puzzle) : "—"; $("#puzzleStatus").textContent = "Tap a tile, then tap another tile to swap them."; $("#puzzleReplay").hidden = true; renderPuzzle(); }
+  function shufflePuzzle() { puzzleTiles = shuffle([...Array(9).keys()]); while (isSolvedPuzzle()) puzzleTiles = shuffle([...Array(9).keys()]); puzzleMoves = 0; puzzleSelected = null; $("#puzzleMoves").textContent = "0"; $("#puzzleStatus").textContent = "Tap two tiles to swap them."; $("#puzzleStart").textContent = "Shuffle again"; $("#puzzleReplay").hidden = true; renderPuzzle(); }
+  function renderPuzzle() { const board = $("#puzzleBoard"); if (!board) return; board.innerHTML = ""; puzzleTiles.forEach((tile, position) => { const button = document.createElement("button"); button.type = "button"; button.className = "puzzle-tile"; button.dataset.position = String(position); button.dataset.tile = String(tile); button.setAttribute("aria-label", `Cake tile ${tile + 1}`); if (puzzleSelected === position) button.classList.add("is-selected"); button.addEventListener("click", () => selectPuzzle(position)); board.appendChild(button); }); }
+  function isSolvedPuzzle() { return puzzleTiles.every((tile, index) => tile === index); }
+  function selectPuzzle(position) { if (puzzleSelected === null) { puzzleSelected = position; renderPuzzle(); return; } if (puzzleSelected === position) { puzzleSelected = null; renderPuzzle(); return; } [puzzleTiles[puzzleSelected], puzzleTiles[position]] = [puzzleTiles[position], puzzleTiles[puzzleSelected]]; puzzleSelected = null; puzzleMoves += 1; $("#puzzleMoves").textContent = String(puzzleMoves); renderPuzzle(); if (isSolvedPuzzle()) finishPuzzle(); }
+  function finishPuzzle() { const score = Math.max(120, 850 - puzzleMoves * 22); $("#puzzleBest").textContent = String(Math.max(Number(state.best?.puzzle || 0), score)); $("#puzzleReplay").hidden = false; $("#puzzleStatus").textContent = `Cake complete in ${puzzleMoves} moves. 🎂`; markComplete("puzzle", score); celebrate(20); showToast(`Puzzle solved! +${Math.round(score)}`); }
+
+  // Gifts
+  function resetGifts() { const stage = $("#giftStage"); if (!stage) return; stage.innerHTML = ""; $("#giftResult").textContent = ""; $("#giftStatus").textContent = "Choose one box. There is no wrong answer. 😁"; $("#giftReplay").hidden = true; [1,2,3,4,5].forEach((number) => { const button = document.createElement("button"); button.type = "button"; button.className = "gift-box"; button.setAttribute("aria-label", `Choose gift box ${number}`); button.innerHTML = `<span class="gift-lid"></span><span class="gift-body"></span><span class="gift-ribbon-v"></span><span class="gift-ribbon-h"></span><span class="gift-bow"></span>`; button.addEventListener("click", () => openGift(button, number), { once: true }); stage.appendChild(button); }); }
+  function openGift(button, number) { const gifts = [
+    { text: "Confetti attack! You found the sparkle box. ✨", score: 110 },
+    { text: "A bonus 70 points and absolutely no explanation. 😂", score: 70 },
+    { text: "Tiny birthday chaos unlocked. You are now officially fun. 😁", score: 55 },
+    { text: "A secret wish follows you into the next chapter. ❤️", score: 90 },
+    { text: "You picked the ‘why is this even here?’ box. Perfect. 🤣", score: 40 }
+  ]; const result = gifts[(number - 1 + Math.floor(Math.random() * gifts.length)) % gifts.length]; $$(".gift-box").forEach((box) => { box.disabled = true; if (box !== button) box.style.opacity = ".45"; }); button.classList.add("is-picked"); $("#giftResult").textContent = result.text; $("#giftStatus").textContent = `Gift box ${number} opened. Score: ${result.score}.`; $("#giftReplay").hidden = false; markComplete("gifts", result.score); celebrate(16); showToast(`Gift unlocked! +${result.score}`); }
+
+  function bindEvents() {
+    $$("[data-game]").forEach((button) => button.addEventListener("click", () => openGame(button.dataset.game)));
+    $$('[data-back]').forEach((button) => button.addEventListener("click", closeGame));
+    $("#workspaceHome")?.addEventListener("click", (event) => { event.preventDefault(); closeGame(); $("#games")?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" }); });
+    $("#resetFunProgress")?.addEventListener("click", resetProgress);
+    $$(".candle").forEach((candle) => candle.addEventListener("click", () => handleCandle(candle)));
+    $("#cakeCut")?.addEventListener("click", cutCake); $("#cakeReplay")?.addEventListener("click", () => initCake(true));
+    $("#heartsStart")?.addEventListener("click", startHearts); $("#heartsReplay")?.addEventListener("click", startHearts);
+    $("#balloonsStart")?.addEventListener("click", startBalloons); $("#balloonsReplay")?.addEventListener("click", startBalloons);
+    $$("[data-difficulty]").forEach((button) => button.addEventListener("click", () => { memoryDifficulty = button.dataset.difficulty; $$("[data-difficulty]").forEach((el) => el.classList.toggle("is-active", el === button)); resetMemory(); }));
+    $("#memoryStart")?.addEventListener("click", startMemory); $("#memoryReplay")?.addEventListener("click", startMemory);
+    $("#puzzleStart")?.addEventListener("click", shufflePuzzle); $("#puzzleReplay")?.addEventListener("click", shufflePuzzle); $("#giftReplay")?.addEventListener("click", resetGifts);
+    const secret = $("#secretStar"); secret?.addEventListener("click", () => unlockEasterEgg("star")); secret?.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); unlockEasterEgg("star"); } });
+    let typed = ""; window.addEventListener("keydown", (event) => { if (event.key.length !== 1) return; typed = `${typed}${event.key.toLowerCase()}`.slice(-6); if (typed === "khushi") unlockEasterEgg("khushi"); });
+  }
+
+  function unlockEasterEgg(key) { if (state.easterEggs.includes(key)) { showToast(key === "star" ? "You found it again. 😁✦" : "The secret word still works. ❤️"); return; } state.easterEggs.push(key); state.totalBonus = Number(state.totalBonus || 0) + 30; saveState(); celebrate(22); showToast(key === "star" ? "Secret star found! +30 bonus points ✦" : "Secret word found! +30 bonus points ❤️"); }
+
+  let visibilityPaused = false;
+  function pauseRunningGames() {
+    if (visibilityPaused) return;
+    visibilityPaused = true;
+    if (heartsTimer) { window.clearInterval(heartsTimer); heartsTimer = null; }
+    if (heartsSpawner) { window.clearInterval(heartsSpawner); heartsSpawner = null; }
+    if (balloonsTimer) { window.clearInterval(balloonsTimer); balloonsTimer = null; }
+    if (balloonsSpawner) { window.clearInterval(balloonsSpawner); balloonsSpawner = null; }
+    if (memoryTimer) { window.clearInterval(memoryTimer); memoryTimer = null; }
+  }
+  function resumeRunningGames() {
+    if (!visibilityPaused || document.hidden) return;
+    visibilityPaused = false;
+    if (activeGame === "hearts" && $("#heartsStart")?.hidden && heartsSeconds > 0) {
+      heartsSpawner = window.setInterval(spawnHeart, reducedMotion ? 1050 : 760);
+      heartsTimer = window.setInterval(() => {
+        heartsSeconds -= 1;
+        $("#heartsTimer").textContent = String(Math.max(0, heartsSeconds));
+        if (heartsSeconds <= 0) finishHearts();
+      }, 1000);
+      $("#heartsStatus").textContent = "Back again — keep catching! ❤️";
+    }
+    if (activeGame === "balloons" && $("#balloonsStart")?.hidden && balloonsSeconds > 0) {
+      balloonsSpawner = window.setInterval(spawnBalloon, reducedMotion ? 1000 : 720);
+      balloonsTimer = window.setInterval(() => {
+        balloonsSeconds -= 1;
+        $("#balloonsTimer").textContent = String(Math.max(0, balloonsSeconds));
+        if (balloonsSeconds <= 0) finishBalloons();
+      }, 1000);
+      $("#balloonsStatus").textContent = "Welcome back — keep the streak alive! 🎈";
+    }
+    if (activeGame === "memory" && $("#memoryStart")?.hidden && !memoryMatched) {
+      memoryTimer = window.setInterval(() => {
+        memorySeconds += 1;
+        $("#memoryTimer").textContent = String(memorySeconds);
+      }, 1000);
+      $("#memoryStatus").textContent = "Game resumed.";
+    }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) pauseRunningGames();
+    else resumeRunningGames();
+  }, { passive: true });
+
+  function init() { renderProgress(); bindEvents(); initCake(true); resetHearts(); resetBalloons(); resetMemory(); resetPuzzle(); resetGifts(); window.addEventListener("khushi:progress", renderProgress); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else init();
+})();
