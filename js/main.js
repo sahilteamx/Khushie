@@ -141,6 +141,7 @@
     const close = $("#musicClose");
     const storageKey = "khushiMusic";
     const source = audio.dataset.src || "";
+    audio.loop = true;
     const ensureSource = () => {
       if (!audio.src && source) { audio.src = source; audio.load(); }
       return Boolean(audio.src);
@@ -163,6 +164,19 @@
       const total = Math.max(0, Math.floor(seconds));
       return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
     };
+    const attemptAutoplay = async () => {
+      if (!ensureSource()) return false;
+      try {
+        await audio.play();
+        return true;
+      } catch (error) {
+        if (status) {
+          status.textContent = error?.name === "NotAllowedError" ? "Tap to play" : "Tap to play";
+        }
+        return false;
+      }
+    };
+
     const sync = () => {
       const playing = !audio.paused && !audio.ended;
       player.classList.toggle("is-playing", playing);
@@ -216,6 +230,7 @@
       close.setAttribute("aria-label", minimized ? "Expand music player" : "Minimize music player");
     });
     sync();
+    void attemptAutoplay().then(() => sync());
   }
 
   async function fetchCsrfToken(signal) {
@@ -274,3 +289,4 @@
   function init() { year(); navigation(); header(); anchors(); pageTransitions(); countdown(); music(); messageForm(); loader(); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else init();
 })();
+        
