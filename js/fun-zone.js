@@ -289,7 +289,6 @@
     board.classList.toggle("is-hard", memoryDifficulty === "hard");
     board.setAttribute("aria-disabled", "true");
     board.innerHTML = "";
-
     for (let i = 0; i < pairs * 2; i += 1) {
       const button = document.createElement("button");
       button.type = "button";
@@ -307,16 +306,15 @@
 
     memoryRound += 1;
     stopMemory();
-
     const currentRound = memoryRound;
     const pairCount = memoryConfig[memoryDifficulty];
     const chosen = shuffle(symbols).slice(0, pairCount);
 
-    memoryDeck = shuffle([
-      ...chosen.map((symbol) => ({ symbol, matched: false })),
-      ...chosen.map((symbol) => ({ symbol, matched: false }))
-    ]).map((card, index) => ({ ...card, id: index }));
-
+    memoryDeck = shuffle([...chosen, ...chosen].map((symbol, index) => ({
+      id: index,
+      symbol,
+      matched: false
+    })));
     memoryOpen = [];
     memoryMoves = 0;
     memoryMatched = 0;
@@ -343,6 +341,7 @@
       button.dataset.index = String(index);
       button.setAttribute("aria-label", "Hidden memory card");
       button.innerHTML = `<span class="memory-card-inner"><span class="memory-face memory-face--back">?</span><span class="memory-face memory-face--front">${card.symbol}</span></span>`;
+      button.addEventListener("click", () => flipMemory(index));
       board.appendChild(button);
     });
 
@@ -351,14 +350,6 @@
       memorySeconds += 1;
       $("#memoryTimer").textContent = String(memorySeconds);
     }, 1000);
-  }
-
-  function handleMemoryBoardClick(event) {
-    const button = event.target.closest(".memory-card");
-    if (!button || !$("#memoryBoard")?.contains(button) || button.disabled) return;
-    const index = Number(button.dataset.index);
-    if (!Number.isInteger(index)) return;
-    flipMemory(index);
   }
 
   function flipMemory(index) {
@@ -399,10 +390,10 @@
       });
 
       memoryOpen = [];
-      $("#memoryPairs").textContent = `${memoryMatched} / ${memoryConfig[memoryDifficulty]}`;
+      $("#memoryPairs").textContent = `${memoryMatched} / ${pairCountForCurrentDifficulty()}`;
       $("#memoryStatus").textContent = `Match! +1 point. Score: ${memoryScore}. ✨`;
 
-      if (memoryMatched === memoryConfig[memoryDifficulty]) finishMemory();
+      if (memoryMatched === pairCountForCurrentDifficulty()) finishMemory();
       return;
     }
 
@@ -411,18 +402,20 @@
     const roundAtMismatch = memoryRound;
     memoryMismatchTimer = window.setTimeout(() => {
       if (roundAtMismatch !== memoryRound) return;
-
       [aIndex, bIndex].forEach((idx) => {
         const cardButton = $(`.memory-card[data-index="${idx}"]`, $("#memoryBoard"));
         cardButton?.classList.remove("is-flipped");
         cardButton?.setAttribute("aria-label", "Hidden memory card");
       });
-
       memoryOpen = [];
       memoryLocked = false;
       memoryMismatchTimer = null;
-      $("#memoryStatus").textContent = `Keep going. Pairs found: ${memoryMatched} / ${memoryConfig[memoryDifficulty]}.`;
+      $("#memoryStatus").textContent = `Keep going. Pairs found: ${memoryMatched} / ${pairCountForCurrentDifficulty()}.`;
     }, reducedMotion ? 280 : 850);
+  }
+
+  function pairCountForCurrentDifficulty() {
+    return memoryConfig[memoryDifficulty] || memoryConfig.easy;
   }
 
   function finishMemory() {
@@ -430,4 +423,11 @@
     const base = 900 - memoryMoves * 18 - memorySeconds * 3;
     const score = Math.max(100, base);
     $("#memoryReplay").hidden = false;
-    $("#memoryStatus").textContent = `🎉 Complete! ${memoryMatched} pairs · ${memoryScore} poi
+    $("#memoryStatus").textContent = `🎉 Complete! ${memoryMatched} pairs · ${memoryScore} points · ${memoryMoves} moves · ${memorySeconds}s.`;
+    markComplete("memory", score);
+    celebrate(20);
+    showToast(`Memory complete! ${memoryScore} pair points earned`);
+  }
+
+  // Puzzle
+  let 
