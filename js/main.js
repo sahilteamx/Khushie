@@ -1,8 +1,15 @@
 function music() {
   const audio = $("#birthdayAudio");
   const player = $("#musicPlayer");
-
   if (!audio || !player) return;
+
+  // Prevent duplicate music bindings.
+  if (audio.dataset.musicBound === "true") return;
+  audio.dataset.musicBound = "true";
+
+  // One continuous soundtrack instance for this page.
+  audio.loop = true;
+  audio.preload = "metadata";
 
   const toggle = $("#musicToggle");
   const mute = $("#musicMute");
@@ -15,39 +22,29 @@ function music() {
   const storageKey = "khushiMusic";
   const source = audio.dataset.src || "";
 
-  // Keep exactly one audio element in this page instance.
-  audio.loop = true;
-
-  const save = (key, value) => {
-    setStorage(sessionStorage, `${storageKey}:${key}`, String(value));
-  };
-
-  const read = (key, fallback = "0") => {
-    return getStorage(sessionStorage, `${storageKey}:${key}`, fallback);
-  };
-
   const ensureSource = () => {
     if (!audio.src && source) {
       audio.src = source;
+      audio.load();
     }
-
     return Boolean(audio.src);
   };
 
-  /* --------------------------------
-     VOLUME / MUTE
-  -------------------------------- */
-
+  // Default = 100%.
+  // Manual volume changes are remembered.
   let userVolume = Number(
-    getStorage(localStorage, `${storageKey}:volume`, "0.8")
+    getStorage(localStorage, `${storageKey}:volume`, "1")
   );
 
-  if (!Number.isFinite(userVolume) || userVolume < 0 || userVolume > 1) {
-    userVolume = 0.8;
+  if (
+    !Number.isFinite(userVolume) ||
+    userVolume < 0 ||
+    userVolume > 1
+  ) {
+    userVolume = 1;
   }
 
   audio.volume = userVolume;
-
   audio.muted =
     getStorage(localStorage, `${storageKey}:muted`, "0") === "1";
 
@@ -55,18 +52,15 @@ function music() {
     volume.value = String(userVolume);
   }
 
-  /* --------------------------------
-     RESTORE PLAYBACK STATE
-  -------------------------------- */
+  // Restore music position + playing state when moving between pages.
+  const savedTime = Number(
+    getStorage(sessionStorage, `${storageKey}:time`, "0")
+  );
 
-  const savedTime = Number(read("time", "0"));
-  const wasPlaying = read("playing", "0") === "1";
+  let shouldResume =
+    getStorage(sessionStorage, `${storageKey}:playing`, "0") === "1";
 
-  let restored = false;
-
-  const restorePosition = () => {
-    if (restored) return;
-
+  const restoreTime = () => {
     if (
       Number.isFinite(savedTime) &&
       savedTime > 0 &&
@@ -75,32 +69,20 @@ function music() {
     ) {
       audio.currentTime = Math.min(
         savedTime,
-        Math.max(0, audio.duration - 0.05)
+        Math.max(0.01, audio.duration - 0.01)
       );
     }
-
-    restored = true;
-    sync();
   };
-
-  /* --------------------------------
-     TIME FORMAT
-  -------------------------------- */
 
   const fmt = (seconds) => {
     if (!Number.isFinite(seconds)) return "00:00";
 
     const total = Math.max(0, Math.floor(seconds));
 
-    return (
-      `${String(Math.floor(total / 60)).padStart(2, "0")}:` +
-      `${String(total % 60).padStart(2, "0")}`
-    );
+    return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(
+      total % 60
+    ).padStart(2, "0")}`;
   };
-
-  /* --------------------------------
-     UI SYNC
-  -------------------------------- */
 
   const sync = () => {
     const playing = !audio.paused && !audio.ended;
@@ -120,25 +102,24 @@ function music() {
     );
 
     if (status) {
-      if (audio.error) {
-        status.textContent = "Music file unavailable";
-      } else if (playing) {
-        status.textContent = "Playing";
-      } else if (audio.currentTime > 0) {
-        status.textContent = "Ready to resume";
-      } else {
-        status.textContent = "Tap to play";
-      }
+      status.textContent = audio.error
+        ? "Music file unavailable"
+        : playing
+          ? "Playing"
+          : audio.currentTime > 0
+            ? "Ready to resume"
+            : "Tap to play";
     }
 
     if (time) {
-      time.textContent =
-        `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+      time.textContent = `${fmt(audio.currentTime)} / ${fmt(
+        audio.duration
+      )}`;
     }
 
     if (progress) {
       progress.value =
-        Number.isFinite(audio.duration) && audio.duration > 0
+        audio.duration > 0
           ? String(
               (audio.currentTime / audio.duration) * 100
             )
@@ -157,221 +138,221 @@ function music() {
     }
   };
 
-  /* --------------------------------
-     SAVE CURRENT STATE
-  -------------------------------- */
-
-  const persist = () => {
+  const persistState = () => {
     if (
       Number.isFinite(audio.currentTime) &&
-      audio.currentTime >= 0
+      audio.currentTime > 0
     ) {
-      save("time", audio.currentTime);
+      setStorage(
+        sessionStorage,
+        `${storageKey}:time`,
+        String(audio.currentTime)
+      );
     }
 
-    save(
-      "playing",
+    setStorage(
+      sessionStorage,
+      `${storageKey}:playing`,
       !audio.paused && !audio.ended ? "1" : "0"
     );
   };
 
-  /* --------------------------------
-     PLAY / PAUSE
-  -------------------------------- */
-
-  const playMusic = async () => {
-    if (!ensureSource()) {
-      if (status) {
-        status.textContent =
-          "Audio source is not configured";
-      }
-      return false;
-    }
+  const attemptResume = async () => {
+    if (!ensureSource()) return false;
 
     try {
+      restoreTime();
+
       await audio.play();
-      save("playing", "1");
-      sync();
+
+      shouldResume = true;
+
+      setStorage(
+        sessionStorage,
+        `${storageKey}:playing`,
+        "1"
+      );
+
       return true;
     } catch (error) {
       if (status) {
         status.textContent =
           error?.name === "NotAllowedError"
-            ? "Tap play to continue music"
-            : "Music could not be played";
+            ? "Tap to resume music"
+            : "Tap to play";
       }
 
-      sync();
       return false;
     }
   };
 
-  const pauseMusic = () => {
-    audio.pause();
-    persist();
+  // Main Play / Pause button.
+  toggle?.addEventListener("click", async () => {
+    if (!ensureSource()) {
+      if (status) {
+        status.textContent =
+          "Audio source is not configured";
+      }
+      return;
+    }
+
+    try {
+      if (audio.paused) {
+        await audio.play();
+
+        shouldResume = true;
+
+        setStorage(
+          sessionStorage,
+          `${storageKey}:playing`,
+          "1"
+        );
+      } else {
+        audio.pause();
+
+        shouldResume = false;
+
+        setStorage(
+          sessionStorage,
+          `${storageKey}:playing`,
+          "0"
+        );
+      }
+    } catch (error) {
+      if (status) {
+        status.textContent =
+          error?.name === "NotAllowedError"
+            ? "Tap again to start the music"
+            : "Music could not be played";
+      }
+    }
+
     sync();
-  };
-
-  toggle?.addEventListener("click", async (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (audio.paused) {
-      await playMusic();
-    } else {
-      pauseMusic();
-    }
   });
 
-  /* --------------------------------
-     AUDIO EVENTS
-  -------------------------------- */
-
-  audio.addEventListener("loadedmetadata", () => {
-    restorePosition();
-
-    /*
-      A new HTML page cannot inherit autoplay permission
-      from the previous page.
-
-      We TRY to resume first.
-      If browser blocks it, the first real user interaction
-      can resume the soundtrack without changing the player.
-    */
-    if (wasPlaying && audio.paused) {
-      audio.play()
-        .then(() => {
-          save("playing", "1");
-          sync();
-        })
-        .catch(() => {
-          if (status) {
-            status.textContent =
-              "Tap anywhere to continue music";
-          }
-          sync();
-        });
-    }
-  });
-
+  // Keep UI synchronized.
   [
     "play",
-    "playing",
     "pause",
-    "timeupdate",
     "loadedmetadata",
-    "durationchange",
-    "canplay",
-    "volumechange"
+    "timeupdate",
+    "volumechange",
+    "canplay"
   ].forEach((eventName) => {
     audio.addEventListener(eventName, sync);
   });
 
   audio.addEventListener("play", () => {
-    save("playing", "1");
+    shouldResume = true;
+
+    setStorage(
+      sessionStorage,
+      `${storageKey}:playing`,
+      "1"
+    );
+
     sync();
   });
 
   audio.addEventListener("pause", () => {
-    persist();
-    sync();
-  });
+    // Don't destroy saved playing intent during page teardown.
+    if (!document.hidden) {
+      shouldResume = false;
 
-  audio.addEventListener("ended", () => {
-    /*
-      loop=true normally prevents this from being visible
-      to the user, but clear saved state safely if it does end.
-    */
-    save("time", "0");
-    save("playing", "0");
-    sync();
-  });
-
-  audio.addEventListener("error", () => {
-    if (status) {
-      status.textContent = "Add music/birthday.mp3";
+      setStorage(
+        sessionStorage,
+        `${storageKey}:playing`,
+        "0"
+      );
     }
 
     sync();
   });
 
-  /* --------------------------------
-     RESUME ON FIRST USER INTERACTION
-  -------------------------------- */
+  audio.addEventListener("ended", () => {
+    try {
+      sessionStorage.removeItem(
+        `${storageKey}:time`
+      );
 
-  if (wasPlaying) {
-    const resumeFromInteraction = async () => {
-      if (!audio.paused) return;
+      sessionStorage.setItem(
+        `${storageKey}:playing`,
+        "0"
+      );
+    } catch {}
 
-      const resumed = await playMusic();
+    shouldResume = false;
 
-      if (resumed) {
-        document.removeEventListener(
-          "pointerdown",
-          resumeFromInteraction
-        );
+    sync();
+  });
 
-        document.removeEventListener(
-          "keydown",
-          resumeFromInteraction
-        );
+  audio.addEventListener("error", sync);
 
-        document.removeEventListener(
-          "touchstart",
-          resumeFromInteraction
-        );
+  // Restore position and try to resume on the new page.
+  audio.addEventListener(
+    "loadedmetadata",
+    async () => {
+      restoreTime();
+
+      if (shouldResume) {
+        await attemptResume();
       }
-    };
 
-    document.addEventListener(
-      "pointerdown",
+      sync();
+    },
+    { once: true }
+  );
+
+  /*
+   * Browser autoplay rules cannot be bypassed.
+   * If the browser blocks automatic resume after navigation,
+   * the first user interaction will resume the song.
+   */
+  const resumeFromInteraction = async () => {
+    if (!shouldResume || !audio.paused) return;
+
+    const resumed = await attemptResume();
+
+    if (resumed) {
+      sync();
+    }
+  };
+
+  [
+    "pointerdown",
+    "keydown",
+    "touchstart"
+  ].forEach((eventName) => {
+    window.addEventListener(
+      eventName,
       resumeFromInteraction,
-      { passive: true }
+      {
+        passive: true
+      }
     );
+  });
 
-    document.addEventListener(
-      "keydown",
-      resumeFromInteraction,
-      { passive: true }
-    );
-
-    document.addEventListener(
-      "touchstart",
-      resumeFromInteraction,
-      { passive: true }
-    );
-  }
-
-  /* --------------------------------
-     SAVE WHILE LEAVING PAGE
-  -------------------------------- */
-
+  // Save position/state when tab is hidden.
   document.addEventListener(
     "visibilitychange",
     () => {
       if (document.hidden) {
-        persist();
+        persistState();
+      } else if (shouldResume && audio.paused) {
+        void attemptResume().then(sync);
       }
     },
     { passive: true }
   );
 
+  // Save position/state before leaving the page.
   window.addEventListener(
     "pagehide",
-    persist,
+    persistState,
     { passive: true }
   );
 
-  window.addEventListener(
-    "beforeunload",
-    persist,
-    { passive: true }
-  );
-
-  /* --------------------------------
-     VOLUME
-  -------------------------------- */
-
+  // Volume.
   volume?.addEventListener("input", () => {
     const nextVolume = Number(volume.value);
 
@@ -396,19 +377,14 @@ function music() {
       `${storageKey}:muted`,
       "0"
     );
-
-    sync();
   });
 
-  /* --------------------------------
-     MUTE
-  -------------------------------- */
-
+  // Mute / Unmute.
   mute?.addEventListener("click", () => {
     audio.muted = !audio.muted;
 
     if (!audio.muted && audio.volume === 0) {
-      audio.volume = userVolume || 0.8;
+      audio.volume = userVolume || 1;
     }
 
     setStorage(
@@ -420,36 +396,30 @@ function music() {
     sync();
   });
 
-  /* --------------------------------
-     PROGRESS
-  -------------------------------- */
-
+  // Progress bar.
   progress?.addEventListener("input", () => {
     if (
       Number.isFinite(audio.duration) &&
       audio.duration > 0
     ) {
-      const percent = Math.min(
-        100,
-        Math.max(0, Number(progress.value))
-      );
-
       audio.currentTime =
-        (percent / 100) * audio.duration;
+        (Math.min(
+          100,
+          Math.max(0, Number(progress.value))
+        ) /
+          100) *
+        audio.duration;
 
-      save("time", audio.currentTime);
-      sync();
+      setStorage(
+        sessionStorage,
+        `${storageKey}:time`,
+        String(audio.currentTime)
+      );
     }
   });
 
-  /* --------------------------------
-     MINIMIZE / EXPAND
-  -------------------------------- */
-
-  close?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-
+  // Minimize / Expand player.
+  close?.addEventListener("click", () => {
     const minimized =
       player.classList.toggle("is-minimized");
 
@@ -461,18 +431,10 @@ function music() {
     );
   });
 
-  /* --------------------------------
-     INITIALIZATION
-  -------------------------------- */
+  // Prepare source only when previous page was playing.
+  if (shouldResume) {
+    ensureSource();
+  }
 
-  ensureSource();
   sync();
-
-  /*
-    Important:
-    Do NOT force autoplay here.
-
-    The user must have legitimately started the music,
-    and browser autoplay restrictions remain respected.
-  */
-      }
+}
