@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="A collection of memories created for Khushi."><meta name="theme-color" content="#08090d">
+<title>Memories · Khushi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/animations.css"><link rel="stylesheet" href="css/memories.css">
+<script src="js/config.js" defer></script><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script><script src="js/media-data.js" defer></script><script src="js/animations.js" defer></script><script src="js/main.js" defer></script><script src="js/memories.js" defer></script>
+<script src="js/progress.js" defer></script><script src="js/easter-eggs.js" defer></script><link rel="stylesheet" href="css/part7-polish.css">
+</head>
+<body class="page-memories"><a class="skip-link" href="#main-content">Skip to content</a>
+<div class="page-transition" id="pageTransition" aria-hidden="true"><span class="transition-mark">K</span></div><div class="page-noise" aria-hidden="true"></div>
+<header class="site-header"><a href="index.html" class="brand"><span class="brand-mark">K</span><span class="brand-text">For Khushi</span></a><button class="nav-toggle" id="navToggle" type="button" aria-label="Open navigation" aria-expanded="false"><span></span><span></span></button><nav class="site-nav" id="siteNav" aria-label="Main navigation"><a href="index.html" class="nav-link">Home</a><a href="fun-zone.html" class="nav-link">Fun Zone</a><a href="memories.html" class="nav-link">Memories</a><a href="story.html" class="nav-link">Story</a><a href="mystery-gifts.html" class="nav-link">Gifts</a><a href="sticker-studio.html" class="nav-link">Studio</a><a href="memory-booth.html" class="nav-link">Memory Booth</a><a href="wish-generator.html" class="nav-link">Wish</a><a href="cake-celebration.html" class="nav-link">Cake</a><a href="surprise.html" class="nav-link">Surprise</a><a href="message.html" class="nav-link">Message</a></nav></header>
+<main id="main-content">
+<section class="page-hero memories-hero"><div class="container"><p class="eyebrow reveal">Chapter one · The moments</p><h1 class="page-title reveal">Memories<br><em>worth keeping.</em></h1><p class="page-intro reveal">Four personal memories plus one complete 19-moment journey collage — all kept together in one place.</p></div></section>
+<section class="memory-gallery section" aria-labelledby="memoryGalleryTitle"><div class="container"><div class="gallery-toolbar reveal"><div><span class="section-number">01</span><p id="memoryGalleryTitle">Tap any memory to open it full-screen.</p></div><span class="gallery-count" id="galleryCount">0 moments</span></div><div class="memory-grid" id="memoryGrid" aria-live="polite"></div><noscript><p class="media-note">Enable JavaScript to explore the interactive memory gallery.</p></noscript></div></section>
+<section class="memory-closing section"><div class="container"><div class="closing-card reveal"><p class="eyebrow">One more look</p><h2>Some memories<br><em>deserve their own space.</em></h2><a href="story.html" class="button button--primary">Continue to the story <span class="button-arrow">↗</span></a></div></div></section>
+</main>
+<footer class="site-footer"><div class="container footer-inner"><div class="footer-brand"><span class="brand-mark">K</span><span>Made especially<br><em>for Khushi.</em></span></div><p class="footer-copy">© <span id="currentYear"></span> · For Khushi</p></div></footer>
+<div class="lightbox" id="lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="lightboxTitle"><button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close media">×</button><button class="lightbox-nav lightbox-prev" id="lightboxPrev" type="button" aria-label="Previous media">‹</button><figure class="lightbox-figure" tabindex="-1"><div class="lightbox-media" id="lightboxMedia"><div class="lightbox-placeholder" id="lightboxPlaceholder">Media placeholder</div></div><figcaption><span id="lightboxCounter">01 / 01</span><strong id="lightboxTitle">Memory</strong><p id="lightboxCaption">Caption</p></figcaption></figure><button class="lightbox-nav lightbox-next" id="lightboxNext" type="button" aria-label="Next media">›</button></div>
+<div class="music-player" id="musicPlayer" aria-label="Birthday music player">
+  <audio id="birthdayAudio" preload="none" data-src="music/birthday.mp3" loop></audio>
+  <button class="music-main" id="musicToggle" type="button" aria-label="Play birthday music" aria-pressed="false">
+    <span class="music-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+  </button>
+  <div class="music-meta"><span class="music-title">Birthday soundtrack</span><span class="music-status" id="musicStatus">Tap to play</span></div>
+  <div class="music-controls">
+    <button type="button" id="musicMute" aria-label="Mute music">M</button>
+    <input id="musicVolume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume">
+    <span id="musicTime">00:00 / 00:00</span>
+  </div>
+  <input class="music-progress" id="musicProgress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Music progress">
+  <button class="music-close" id="musicClose" type="button" aria-label="Minimize music player">×</button>
+</div>
+</body></html>
