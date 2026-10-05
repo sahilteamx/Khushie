@@ -1,0 +1,17 @@
+{
+  "name": "For Khushi — Birthday Experience",
+  "short_name": "For Khushi",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#08090d",
+  "theme_color": "#08090d",
+  "description": "A cinematic birthday experience created especially for Khushi.",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
