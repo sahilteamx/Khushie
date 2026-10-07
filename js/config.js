@@ -4,7 +4,7 @@ window.KHUSHI_CONFIG = Object.freeze({
   youtubeVideo: Object.freeze({
     enabled: true,
     // Change ONLY this URL to replace the birthday video later.
-    url: "https://www.youtube.com/watch?v=57jZJ2QpKRg",
+    url: "https://youtu.be/jb2wQBrXn08?feature=shared",
     title: "A little birthday video",
     description: "A temporary YouTube video — replace the URL in js/config.js anytime."
   })
