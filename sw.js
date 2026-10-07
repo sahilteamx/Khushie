@@ -1,4 +1,4 @@
-const CACHE = "khushi-birthday-master-v2";
+const CACHE = "khushi-birthday-master-v3";
 const ASSETS = [
   "404.html",
   "RELEASE-INVENTORY.txt",
