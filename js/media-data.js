@@ -1,7 +1,7 @@
 window.KHUSHI_MEDIA = Object.freeze({
   memories: [
     {
-      id: "memory-01",
+      id: "01 — The Days We Grew Up Together 🌱",
       type: "image",
       src: "images/memories/memory-01.jpg",
       title: "Memory 01",
@@ -9,7 +9,7 @@ window.KHUSHI_MEDIA = Object.freeze({
       label: "Memory 01"
     },
     {
-      id: "memory-02",
+      id: "02 — Those Little Moments We Shared ✨",
       type: "image",
       src: "images/memories/memory-02.jpg",
       title: "Memory 02",
@@ -17,7 +17,7 @@ window.KHUSHI_MEDIA = Object.freeze({
       label: "Memory 02"
     },
     {
-      id: "memory-03",
+      id: "03 — Us, Right Here, Right Now ❤️",
       type: "image",
       src: "images/memories/memory-03.jpg",
       title: "Memory 03",
@@ -25,7 +25,7 @@ window.KHUSHI_MEDIA = Object.freeze({
       label: "Memory 03"
     },
     {
-      id: "memory-04",
+      id: "04 — Everything Still Waiting Ahead 💫",
       type: "image",
       src: "images/memories/memory-04.jpg",
       title: "Memory 04",
